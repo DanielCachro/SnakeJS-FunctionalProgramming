@@ -13,34 +13,71 @@ const initialState = {
 	grid: {width: 25, height: 25},
 	snake: [point(5, 5)],
 	snakeColor: '#074513',
-	snakeLength: 5,
+	snakeRounding: 90,
+	snakeLength: 6,
 	fruit: point(10, 5),
+	fruitRounding: 8,
 	fruitColor: '#9e0817',
 	move: DIRECTIONS.ArrowRight,
+	gameSpeed: 75,
+	maxSpeed: 30,
+	speedDecrease: 3,
 }
 
 // Using R.clone to be sure of not modifying original object. Standard js assignment is by reference
 let state = R.clone(initialState)
 
-const setColor = (ctx, color) => (ctx.fillStyle = color)
-const drawPoint = (ctx, {x, y}, {width, height}) => ctx.fillRect(x * width, y * width, width, height)
+const getRandomColor = () => `#${Math.floor(Math.random() * 16777215).toString(16)}`
+
+const setColor = (ctx, color) => {
+	ctx.lineWidth = 6
+	ctx.strokeStyle = '#111111'
+	ctx.fillStyle = color
+}
+
+const setHeadRounding = ({x, y}, snakeRounding) => {
+	switch (true) {
+		case x == -1 && y == 0:
+			return [snakeRounding, 0, 0, snakeRounding]
+		case x == 0 && y == -1:
+			return [snakeRounding, snakeRounding, 0, 0]
+		case x == 1 && y == 0:
+			return [0, snakeRounding, snakeRounding, 0]
+		case x == 0 && y == 1:
+			return [0, 0, snakeRounding, snakeRounding]
+	}
+}
+
+const setSnakeRounding = (index, snake, move, snakeRounding) =>
+	index + 1 === snake.length ? setHeadRounding(move, snakeRounding) : [0, 0, 0, 0]
+
+const drawPoint = (ctx, {x, y}, {width, height}, rounding) => {
+	ctx.beginPath()
+	ctx.roundRect(x * width, y * width, width, height, rounding)
+	ctx.stroke()
+	ctx.fill()
+}
+
 const setDirection = direction => state => ({
 	...state,
 	move: DIRECTIONS[direction],
 })
+const setSpeed = ({gameSpeed, maxSpeed, speedDecrease}) => (gameSpeed > maxSpeed ? gameSpeed - speedDecrease : maxSpeed)
 const edge = (value, range) => (value < 0 ? range : value % range)
 const random = range => Math.floor(Math.random() * range)
 const setTail = ({snake, snakeLength}) =>
 	R.drop(Math.abs(snake.length > snakeLength ? snake.length - snakeLength : 0), snake)
 
-const draw = (ctx, canvas, {fruitColor, snakeColor, fruit, snake, grid}) => {
+const draw = (ctx, canvas, {fruitColor, snakeColor, fruitRounding, snakeRounding, fruit, snake, grid, move}) => {
 	ctx.clearRect(0, 0, canvas.width, canvas.height)
 
 	setColor(ctx, fruitColor)
-	drawPoint(ctx, fruit, grid)
+	drawPoint(ctx, fruit, grid, fruitRounding)
 
 	setColor(ctx, snakeColor)
-	snake.forEach(point => drawPoint(ctx, point, grid))
+	snake.forEach((point, index) => {
+		drawPoint(ctx, point, grid, setSnakeRounding(index, snake, move, snakeRounding))
+	})
 }
 
 const nextStep = ({snake, move, grid}) =>
@@ -51,7 +88,8 @@ const nextSnake = state =>
 		? {
 				...state,
 				snake: [point(5, 5)],
-				snakeLength: 5,
+				snakeLength: initialState.snakeLength,
+				gameSpeed: initialState.gameSpeed,
 		  }
 		: {
 				...state,
@@ -63,7 +101,9 @@ const nextApple = state =>
 		? {
 				...state,
 				fruit: point(random(state.grid.width), random(state.grid.height)),
+				fruitColor: getRandomColor(),
 				snakeLength: state.snakeLength + 1,
+				gameSpeed: setSpeed(state),
 		  }
 		: state
 
@@ -71,13 +111,13 @@ const nextState = state => {
 	return R.pipe(nextApple, nextSnake)(state)
 }
 
-// draw(ctx, canvas, state)
-// state = nextState(state)
-
-setInterval(() => {
+const refreshState = () => {
 	draw(ctx, canvas, state)
 	state = nextState(state)
-}, 50)
+	setTimeout(refreshState, state.gameSpeed)
+	console.log(state.gameSpeed)
+}
+setTimeout(refreshState, state.gameSpeed)
 
 document.addEventListener('keydown', ({key: direction}) => {
 	state = setDirection(direction)(state)
