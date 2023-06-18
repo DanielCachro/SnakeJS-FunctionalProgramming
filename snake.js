@@ -20,7 +20,7 @@ const initialState = {
 	fruitColor: '#9e0817',
 	move: DIRECTIONS.ArrowRight,
 	gameSpeed: 75,
-	maxSpeed: 30,
+	maxSpeed: 35,
 	speedDecrease: 3,
 }
 
@@ -62,7 +62,9 @@ const setDirection = direction => state => ({
 	...state,
 	move: DIRECTIONS[direction],
 })
-const setSpeed = ({gameSpeed, maxSpeed, speedDecrease}) => (gameSpeed > maxSpeed ? gameSpeed - speedDecrease : maxSpeed)
+const collectedFruits = ({snakeLength}) => snakeLength - initialState.snakeLength
+const calculateScore = ({gameSpeed}) => collectedFruits(state) * Math.floor((1 / gameSpeed) * 1000)
+const setSpeed = ({gameSpeed, maxSpeed, speedDecrease}) => Math.max(gameSpeed - speedDecrease, maxSpeed)
 const edge = (value, range) => (value < 0 ? range : value % range)
 const random = range => Math.floor(Math.random() * range)
 const setTail = ({snake, snakeLength}) =>
@@ -83,18 +85,22 @@ const draw = (ctx, canvas, {fruitColor, snakeColor, fruitRounding, snakeRounding
 const nextStep = ({snake, move, grid}) =>
 	point(edge(R.last(snake).x + move.x, grid.width), edge(R.last(snake).y + move.y, grid.height))
 
-const nextSnake = state =>
-	R.find(R.equals(nextStep(state)))(state.snake)
-		? {
-				...state,
-				snake: [point(5, 5)],
-				snakeLength: initialState.snakeLength,
-				gameSpeed: initialState.gameSpeed,
-		  }
-		: {
-				...state,
-				snake: [...setTail(state), nextStep(state)],
-		  }
+const nextSnake = state => {
+	if (R.find(R.equals(nextStep(state)))(state.snake)) {
+		alert(`You lost :(\n\nYour score is: ${calculateScore(state)}\nYou collected ${collectedFruits(state)} fruits`)
+		return {
+			...state,
+			snake: [point(5, 5)],
+			snakeLength: initialState.snakeLength,
+			gameSpeed: initialState.gameSpeed,
+		}
+	} else {
+		return {
+			...state,
+			snake: [...setTail(state), nextStep(state)],
+		}
+	}
+}
 
 const nextApple = state =>
 	R.equals(nextStep(state), state.fruit)
@@ -115,10 +121,10 @@ const refreshState = () => {
 	draw(ctx, canvas, state)
 	state = nextState(state)
 	setTimeout(refreshState, state.gameSpeed)
-	console.log(state.gameSpeed)
 }
 setTimeout(refreshState, state.gameSpeed)
 
 document.addEventListener('keydown', ({key: direction}) => {
 	state = setDirection(direction)(state)
 })
+
