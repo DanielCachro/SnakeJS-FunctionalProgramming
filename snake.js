@@ -58,10 +58,14 @@ const drawPoint = (ctx, {x, y}, {width, height}, rounding) => {
 	ctx.fill()
 }
 
-const setDirection = direction => state => ({
-	...state,
-	move: DIRECTIONS[direction],
-})
+const canUseDirection = (direction, {x}) =>
+	x !== 0 ? (DIRECTIONS[direction].x !== 0 ? false : true) : DIRECTIONS[direction].y !== 0 ? false : true
+
+const setDirection = direction => state =>
+	Object.keys(DIRECTIONS).includes(direction) && canUseDirection(direction, state.move)
+		? {...state, move: DIRECTIONS[direction]}
+		: state
+
 const collectedFruits = ({snakeLength}) => snakeLength - initialState.snakeLength
 const calculateScore = ({gameSpeed}) => collectedFruits(state) * Math.floor((1 / gameSpeed) * 1000)
 const setSpeed = ({gameSpeed, maxSpeed, speedDecrease}) => Math.max(gameSpeed - speedDecrease, maxSpeed)
@@ -127,4 +131,3 @@ setTimeout(refreshState, state.gameSpeed)
 document.addEventListener('keydown', ({key: direction}) => {
 	state = setDirection(direction)(state)
 })
-

@@ -1,5 +1,6 @@
 body {
 	display: flex;
+	flex-direction: column;
 	justify-content: center;
 	align-items: center;
 	min-height: 100vh;
@@ -11,4 +12,15 @@ canvas {
 	background-color: #ffffff;
 	border: 1px solid #111111;
 	border-radius: 3px;
+}
+
+p {
+	font-size: 1.6rem;
+	text-align: center;
+	text-transform: capitalize;
+	color: #363434;
+}
+
+p > span {
+	color: #074513;
 }
